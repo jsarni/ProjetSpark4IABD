@@ -2,12 +2,11 @@ package poc.prestacop.HistoricDataLoader
 
 import java.time.Duration
 import java.util.Properties
-import java.util.concurrent.TimeUnit
 
 import org.apache.kafka.clients.producer.KafkaProducer
 import poc.prestacop.AppConfig
 
-object Main extends AppConfig {
+object HistoricDataMain extends AppConfig {
 
     private val KAFKA_BOOTSTRAP_SERVER: String = conf.getString("kafka_props.kafka_bootstrap_server")
 
