@@ -1,12 +1,14 @@
 package poc.prestacop.HistoricDataLoader
 
-import poc.prestacop.AppConfig
 
-import java.io.{BufferedReader, File, FileReader, FileWriter}
+import poc.prestacop.AppConfig
+import java.io.{BufferedReader, File, FileNotFoundException, FileReader, FileWriter}
+
 import scala.io.Source._
 import scala.util.{Failure, Success, Try}
-
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
+
+import scala.io.BufferedSource
 
 class HistoricDataLoader(producer: KafkaProducer[String, String]){
 
@@ -15,9 +17,8 @@ class HistoricDataLoader(producer: KafkaProducer[String, String]){
     def run(): Unit =  {
         for {
             filesToProcess <- getAllFiles
-            _ = println(filesToProcess.mkString(", "))
             _ = createCheckpointDirectory()
-            _ = println("created checkpoint dir")
+            _ = createMarkpointDirectory()
             _ = processFiles(filesToProcess)
         } yield ()
     }
@@ -45,17 +46,20 @@ class HistoricDataLoader(producer: KafkaProducer[String, String]){
     }
 
     private[this] def isAlreadyProcessed(file: String): Boolean = {
-        val fileCheckpointPath: String = getCheckpointFileName(file)
-        println(s"checkpoint file name is $fileCheckpointPath")
+        val fileMarkpointFile: String = getMarkpointFileName(file)
 
-        println(s"checking $file is processed")
-        Try(fromFile(fileCheckpointPath)) match {
-            case Success(sourceFile) =>
-                println(s"checpoint for $file is found")
-                println(s"checpoint for $file value is ${sourceFile.mkString}")
-                sourceFile.mkString.toInt == PROCESSED_FILE_TAG
-            case Failure(_) =>
-                false
+        if(pathExists(fileMarkpointFile)) {
+            val markpointFile: BufferedSource = fromFile(fileMarkpointFile)
+            Try(markpointFile.mkString.toInt) match {
+                case Success(markpoint) =>
+                    markpointFile.close()
+                    markpoint == PROCESSED_FILE_TAG
+                case Failure(_) =>
+                    markpointFile.close()
+                    false
+            }
+        } else {
+            false
         }
     }
 
@@ -69,27 +73,77 @@ class HistoricDataLoader(producer: KafkaProducer[String, String]){
         s"$MARKPOINT_FILE_PATH_PREFIX$fileRoot"
     }
 
-    private[this] def loadCheckpoint(file: String): Int = {
-        val fileCheckpointPath: String = getCheckpointFileName(file)
-        Try(fromFile(fileCheckpointPath)) match {
-            case Success(sourceFile) =>
-                sourceFile.mkString.toInt
-            case Failure(_) =>
-                0
-        }
-    }
-    private[this] def updateCheckpoint(file: String, checkpoint: Int): Unit = {
-        val checkpointFile: String = getCheckpointFileName(file)
-        val writer: FileWriter = new FileWriter(checkpointFile, false)
-        writer.write(checkpoint.toString)
-        writer.close()
+    private[this] def pathExists(path: String): Boolean = {
+        val file: File = new File(path)
+        file.exists()
     }
 
-    private[this] def updateMarkpoint(file: String, checkpoint: Int): Unit = {
-        val checkpointFile: String = getCheckpointFileName(file)
-        val writer: FileWriter = new FileWriter(checkpointFile, false)
-        writer.write(checkpoint.toString)
-        writer.close()
+    private[this] def loadCheckpoint(file: String): Int = {
+        val fileCheckpointPath: String = getCheckpointFileName(file)
+
+        if (pathExists(fileCheckpointPath)) {
+            val checkpointFile: BufferedSource = fromFile(fileCheckpointPath)
+            Try(checkpointFile.mkString.toInt) match {
+                case Success(checkpoint) =>
+                    checkpointFile.close()
+                    println(s"SUCCESS - Starting file export from Checkpoint $checkpoint")
+                    checkpoint
+                case Failure(_) =>
+                    checkpointFile.close()
+                    println("INFO - Problem with checkpoint file content... Restarting file processing from the begining ")
+                    0
+            }
+        } else {
+            println("INFO - No checkpoint found for this file... Starting file processing from the begining")
+            0
+        }
+    }
+
+    private[this] def loadMarkpoint(file: String): Int = {
+        val fileMarkpointPath: String = getMarkpointFileName(file)
+
+        if (pathExists(fileMarkpointPath)) {
+            val markpointFile: BufferedSource = fromFile(fileMarkpointPath)
+            Try(markpointFile.mkString.toInt) match {
+                case Success(markpoint) =>
+                    markpointFile.close()
+                    println(s"SUCCESS - Starting file export from Markpoint $markpoint")
+                    markpoint
+                case Failure(_) =>
+                    markpointFile.close()
+                    println("INFO - Problem with Markpoint file content... Trying to start file processing from last checkpoint")
+                    MARKPOINT_LOAD_ERROR_TAG
+            }
+        } else {
+            println("INFO - No Markpoint found for this file... Starting file processing from the last checkpoint")
+            MARKPOINT_LOAD_ERROR_TAG
+        }
+    }
+
+    @throws(classOf[FileNotFoundException])
+    private[this] def updateCheckpoint(file: String, checkpoint: Int): Unit = {
+        if(pathExists(PROCESS_CHECKPOINT_FILE_ROOT_PATH)) {
+            val checkpointFile: String = getCheckpointFileName(file)
+            val writer: FileWriter = new FileWriter(checkpointFile, false)
+            writer.write(checkpoint.toString)
+            writer.close()
+        } else {
+            println("ERROR - No Checkpoints directory found")
+            throw new FileNotFoundException("No Checkpoints directory found")
+        }
+    }
+
+    @throws(classOf[FileNotFoundException])
+    private[this] def updateMarkpoint(file: String, markpoint: Int): Unit = {
+        if(pathExists(PROCESS_MARKPOINT_FILE_ROOT_PATH)) {
+            val markpointFile: String = getMarkpointFileName(file)
+            val writer: FileWriter = new FileWriter(markpointFile, false)
+            writer.write(markpoint.toString)
+            writer.close()
+        } else {
+            println("ERROR - No Markpoints directory found")
+            throw new FileNotFoundException("No Markpoints directory found")
+        }
     }
 
     private[this] def createFileReader(file: String): Try[BufferedReader] = {
@@ -100,58 +154,87 @@ class HistoricDataLoader(producer: KafkaProducer[String, String]){
     }
 
     private[this] def createCheckpointDirectory(): Unit = {
-        val dir: File = new File(PROCESS_CHECKPOINT_FILE_ROOT_PATH)
-        if(!dir.exists()){
+        if(!pathExists(PROCESS_CHECKPOINT_FILE_ROOT_PATH)){
+            val dir: File = new File(PROCESS_CHECKPOINT_FILE_ROOT_PATH)
             dir.mkdir()
+            if(pathExists(PROCESS_CHECKPOINT_FILE_ROOT_PATH)) {
+                println("SUCCESS - Checkpoints directory was successfully created")
+            } else {
+                println("ERROR - Checkpoints directory couldn't be created")
+            }
+        } else {
+            println("INFO - Checkpoints directory do already exist")
+        }
+    }
+
+    private[this] def createMarkpointDirectory(): Unit = {
+        if(!pathExists(PROCESS_MARKPOINT_FILE_ROOT_PATH)){
+            val dir: File = new File(PROCESS_MARKPOINT_FILE_ROOT_PATH)
+            dir.mkdir()
+            if(pathExists(PROCESS_MARKPOINT_FILE_ROOT_PATH)) {
+                println("SUCCESS - Markpoints directory was successfully created")
+            } else {
+                println("ERROR - Markpoints directory couldn't be created")
+            }
+        } else {
+            println("INFO - Markpoints directory do already exist")
         }
     }
 
     @scala.annotation.tailrec
     private[this] def readAndSendFile(file: String,
                                       reader: BufferedReader,
-                                      startingCheckpoint: Int,
-                                      currentCheckpoint: Int): Unit = {
-        if(currentCheckpoint >= startingCheckpoint) {
+                                      startingMarkpoint: Int,
+                                      currentMarkpoint: Int): Unit = {
+
+        if(currentMarkpoint >= startingMarkpoint) {
             val filePart: String = reader.readLine()
             if(filePart != null) {
 
                 producer.send(new ProducerRecord(KAFKA_TOPIC, KAFKA_KEY, filePart))
 
-                updateCheckpoint(file, currentCheckpoint)
-                if ((currentCheckpoint % NB_CHECKPOINT_TO_PRINT_INFO) == 0 && (currentCheckpoint > 0)){
-                    println(s"-------> Number of processed Lines : ${currentCheckpoint / 1000}K")
+                updateMarkpoint(file, currentMarkpoint)
+                if ((currentMarkpoint % NB_CHECKPOINT_TO_PRINT_INFO) == 0 && (currentMarkpoint > 0)){
+                    updateCheckpoint(file, currentMarkpoint)
+                    println(s"-------> Number of processed Lines : ${currentMarkpoint / 1000}K")
                 }
-                readAndSendFile(file, reader, startingCheckpoint, currentCheckpoint + 1)
+                readAndSendFile(file, reader, startingMarkpoint, currentMarkpoint + 1)
             } else {
                 reader.close()
                 updateCheckpoint(file, PROCESSED_FILE_TAG)
                 println(s"********************** The file '$file' has been successfully exported **********************")
             }
         } else {
-            readAndSendFile(file, reader, startingCheckpoint, currentCheckpoint + 1)
+            readAndSendFile(file, reader, startingMarkpoint, currentMarkpoint + 1)
         }
     }
 
     private[this] def processFile(fileToProcess: String): Unit = {
         if (!isAlreadyProcessed(fileToProcess)) {
             println(s"================ Started Processing file '$fileToProcess' ================")
-            val checkpoint: Int = loadCheckpoint(fileToProcess)
+
+            val markpoint: Int = loadMarkpoint(fileToProcess)
+
+            val startingPoint: Int =
+                if (markpoint == MARKPOINT_LOAD_ERROR_TAG){
+                    loadCheckpoint(fileToProcess)
+                } else {
+                    markpoint
+                }
+
             createFileReader(fileToProcess) match {
                 case Success(bufferedReader) =>
-                    readAndSendFile(fileToProcess, bufferedReader, checkpoint, 0)
+                    println("INFO - Started exporting the file")
+                    readAndSendFile(fileToProcess, bufferedReader, startingPoint, 0)
                 case Failure(exception) =>
                     println(s"Couldn't read file $fileToProcess. " + exception)
             }
-        } else {
-            println("already processed")
         }
     }
 
     private[this] def processFiles(files: Seq[String]): Unit = {
-        println("files to process function")
         files.foreach{
             file =>
-              println(file)
                 processFile(file)
         }
     }
@@ -162,7 +245,8 @@ object HistoricDataLoader extends AppConfig {
     def apply(producer: KafkaProducer[String, String]):HistoricDataLoader = new HistoricDataLoader(producer)
 
     private val PROCESSED_FILE_TAG: Int = -1
-    private val NB_CHECKPOINT_TO_PRINT_INFO: Int = 250000
+    private val MARKPOINT_LOAD_ERROR_TAG: Int = -2
+    private val NB_CHECKPOINT_TO_PRINT_INFO: Int = 100000
 
     private val HISTORIC_DATA_ROOT_PATH: String = conf.getString("historic_data.raw_files.files_root_path")
     private val PROCESS_CHECKPOINT_FILE_ROOT_PATH: String = conf.getString("historic_data.raw_files.checkpoint_root_path")

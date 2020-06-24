@@ -8,7 +8,7 @@ import poc.prestacop.AppConfig
 
 object HistoricDataMain extends AppConfig {
 
-    private val KAFKA_BOOTSTRAP_SERVER: String = conf.getString("kafka_props.kafka_bootstrap_server")
+    private val KAFKA_BOOTSTRAP_SERVER: String = conf.getString("prestacop.env.kafka_prop.kafka_bootstrap_server")
 
     def main(args: Array[String]): Unit = {
 
