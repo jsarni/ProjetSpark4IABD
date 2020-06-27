@@ -1,20 +1,21 @@
 package poc.prestacop.HistoricDataSaver
 
-import java.util.Properties
+import org.apache.spark.sql.SparkSession
+import poc.prestacop.AppConfig
 
-import org.apache.kafka.clients.consumer.KafkaConsumer
-object HistoricDataSaverMain {
+object HistoricDataSaverMain extends AppConfig{
 
+    val SPARKSESSION_APPNAME: String = conf.getString("historic_data.spark.appname")
+    val SPARKSESSION_MASTER: String = conf.getString("historic_data.spark.master")
     def main(args: Array[String]): Unit = {
 
-        val kafkaProps: Properties = new Properties()
+        val sparkSession: SparkSession =
+            SparkSession
+              .builder()
+              .master(SPARKSESSION_MASTER)
+              .appName(SPARKSESSION_APPNAME)
+              .getOrCreate()
 
-        kafkaProps.put("bootstrap.servers", "localhost:9092")
-        kafkaProps.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
-        kafkaProps.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
-
-        val kafkaConsumer: KafkaConsumer[String, String] = new KafkaConsumer[String, String](kafkaProps)
-
-        HistoricDataSaver(kafkaConsumer).run()
+        HistoricDataSaver(sparkSession).run()
     }
 }
