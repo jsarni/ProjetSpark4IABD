@@ -10,7 +10,7 @@ import java.util.Collections._
 import java.util.Properties
 
 import org.apache.spark.sql.{DataFrame, SparkSession}
-
+import org.apache.spark.sql.SaveMode.Append
 import scala.jdk.CollectionConverters._
 
 class HistoricDataSaver(spark: SparkSession) {
@@ -112,11 +112,25 @@ class HistoricDataSaver(spark: SparkSession) {
         Try(new KafkaConsumer[String, String](kafkaProps))
     }
 
+    private[this] def getFileNameForHdfs(file_name: String): String = {
+        s"$file_name.$WRITING_FILE_FORMAT"
+    }
+
+    private[this] def getFilePathForHdfs(file_name: String): String = {
+        s"$HDFS_TARGET_DIR/${getFileNameForHdfs(file_name)}"
+    }
+
     private[this] def saveFileBatch(fileName: String, fileBatchContent: List[String]): Unit = {
         import spark.implicits._
 
-        val batchDataframe: DataFrame = fileBatchContent.toDF()
-        batchDataframe.show()
+        val batchDataframe: DataFrame =
+            fileBatchContent
+              .toDF()
+              .repartition(NB_DEFAULT_SPARK_PARTITIONS)
+
+        val path: String = getFilePathForHdfs(fileName)
+
+        batchDataframe.write.mode(Append).format(WRITING_FILE_FORMAT).save(path)
     }
 
     private[this] def closeKafkaConsumer(kafkaConsumer: KafkaConsumer[String, String], durationMinutes: Int): Unit = {
@@ -140,5 +154,8 @@ object HistoricDataSaver extends AppConfig {
     val KAFKA_FILE_CONSUMERS_GROUP_ID_PREFIX: String = "-group"
 
     val BATCH_SIZE_FOR_FILE_WRITING_WITH_SPAR: Int = conf.getInt("historic_data.kafka.consumers.spark_writing_batch_size")
+    val WRITING_FILE_FORMAT: String = conf.getString("historic_data.hdfs_files.file_format")
+    val HDFS_TARGET_DIR: String = conf.getString("historic_data.hdfs_files.target_directory")
+    val NB_DEFAULT_SPARK_PARTITIONS: Int = conf.getInt("historic_data.spark.default_partitions")
 }
 
