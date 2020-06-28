@@ -31,7 +31,7 @@ class HistoricDataLoader(producer: KafkaProducer[String, String]){
           .listFiles
           .filter(_.isFile)
           .map(file => file.getName)
-          .filter(_.endsWith(".csv"))
+          .filter(_.endsWith(s".$SOURCE_FILE_FORMAT"))
           .toSeq
         ) match {
             case Success(filesSeq) =>
@@ -282,4 +282,6 @@ object HistoricDataLoader extends AppConfig {
 
     private val MAIN_KAFKA_TOPIC: String = conf.getString("historic_data.kafka.kafka_topic")
     private val KAFKA_KEY: String = conf.getString("historic_data.kafka.kafka_key")
+
+    private val SOURCE_FILE_FORMAT: String = conf.getString("historic_data.raw_files.file_format")
 }
