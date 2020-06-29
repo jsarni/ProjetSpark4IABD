@@ -3,7 +3,7 @@ package poc.prestacop.HistoricDataSaver
 import java.time.Duration
 
 import org.apache.kafka.clients.consumer.{ConsumerRecord, ConsumerRecords, KafkaConsumer}
-import poc.prestacop.AppConfig
+import poc.prestacop.Commons.AppConfig
 
 import scala.util.Try
 import java.util.Collections._

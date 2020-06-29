@@ -1,7 +1,7 @@
 package poc.prestacop.HistoricDataSaver
 
 import org.apache.spark.sql.SparkSession
-import poc.prestacop.AppConfig
+import poc.prestacop.Commons.AppConfig
 
 object HistoricDataSaverMain extends AppConfig{
 
@@ -17,5 +17,7 @@ object HistoricDataSaverMain extends AppConfig{
               .getOrCreate()
 
         HistoricDataSaver(sparkSession).run()
+
+        sparkSession.stop()
     }
 }

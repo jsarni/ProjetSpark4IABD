@@ -1,4 +1,4 @@
-package poc.prestacop
+package poc.prestacop.Commons
 
 import com.typesafe.config.{Config, ConfigFactory}
 
