@@ -19,6 +19,8 @@ lazy val Project = (project in file("."))
       HistoricDataLoader,
       HistoricDataSaver,
       DataProcessor,
+      MessageProducer,
+
   )
 
 lazy val Commons = (project in file("Commons"))
@@ -55,4 +57,13 @@ lazy val DataProcessor = (project in file("DataProcessor"))
           "org.apache.spark" % "spark-core_2.12" % "2.4.0",
           "org.apache.spark" % "spark-sql_2.12" % "2.4.0",
       )
+  ).dependsOn(Commons)
+
+lazy val MessageProducer = (project in file("MessageProducer"))
+  .settings(
+    name := "MessageProducer",
+    commonSettings,
+    libraryDependencies ++= Seq(
+      "org.apache.kafka" %% "kafka" % "2.5.0",
+    )
   ).dependsOn(Commons)
