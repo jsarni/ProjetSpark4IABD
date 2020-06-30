@@ -1,12 +1,11 @@
 package poc.prestacop.HistoricDataLoader
 
-
-import poc.prestacop.AppConfig
 import java.io.{BufferedReader, File, FileNotFoundException, FileReader, FileWriter}
 
 import scala.io.Source._
 import scala.util.{Failure, Success, Try}
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
+import poc.prestacop.Commons.AppConfig
 
 import scala.io.BufferedSource
 

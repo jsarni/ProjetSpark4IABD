@@ -4,12 +4,12 @@ import java.time.Duration
 import java.util.Properties
 
 import org.apache.kafka.clients.producer.KafkaProducer
-import poc.prestacop.AppConfig
+import poc.prestacop.Commons.AppConfig
 
 object HistoricDataLoaderMain extends AppConfig {
 
     private val KAFKA_BOOTSTRAP_SERVER: String = conf.getString("prestacop.env.kafka_prop.kafka_bootstrap_server")
-    private val KAFKA_PRODUCER_CLOSE_DURATION_MINUTES: Int = conf.getInt("historic_data.producers.kafka_producer_close_duration_minutes")
+    private val KAFKA_PRODUCER_CLOSE_DURATION_MINUTES: Int = conf.getInt("historic_data.kafka.producers.kafka_producer_close_duration_minutes")
 
     def main(args: Array[String]): Unit = {
 
