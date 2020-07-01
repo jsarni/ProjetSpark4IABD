@@ -16,7 +16,6 @@ class HistoricDataLoader(producer: KafkaProducer[String, String]){
     def run(): Unit =  {
         for {
             filesToProcess <- getAllFiles
-            _ = sendTopicsToConsumer(filesToProcess)
             _ = createCheckpointDirectory()
             _ = createMarkpointDirectory()
             _ = processFiles(filesToProcess)
@@ -38,18 +37,6 @@ class HistoricDataLoader(producer: KafkaProducer[String, String]){
             case Failure(exception) =>
                 println("ERROR - Please check the specified path of the directory containing the files to export")
                 Failure(exception)
-        }
-    }
-
-    private[this] def sendTopicsToConsumer(topicsList: Seq[String]) : Unit = {
-        Try{
-            topicsList.foreach{ topic =>
-                producer.send(new ProducerRecord(MAIN_KAFKA_TOPIC, KAFKA_KEY, topic))
-            }
-        } match {
-            case Success(_) =>println("SUCCESS - Main topic successfully sent to Kafka Consumer")
-            case Failure(exception) =>
-                println(s"ERROR - An error occured when sending main topic messages to Kafka Consumer. ${exception.getMessage}")
         }
     }
 
@@ -204,10 +191,7 @@ class HistoricDataLoader(producer: KafkaProducer[String, String]){
         if(currentMarkpoint >= startingMarkpoint) {
             if(filePart != null) {
 
-                val currentFileTopic: String = file
-                val currentFileKey: String = file
-
-                producer.send(new ProducerRecord(currentFileTopic, currentFileKey, filePart))
+                producer.send(new ProducerRecord(KAFKA_TOPIC, KAFKA_KEY, filePart))
 
                 updateMarkpoint(file, currentMarkpoint)
                 if ((currentMarkpoint % NB_CHECKPOINT_TO_PRINT_INFO) == 0 && (currentMarkpoint > 0)){
@@ -279,7 +263,7 @@ object HistoricDataLoader extends AppConfig {
     private val CHECKPOINT_FILE_PATH_PREFIX: String = s"$PROCESS_CHECKPOINT_FILE_ROOT_PATH/$CHECKPOINT_PREFIX"
     private val MARKPOINT_FILE_PATH_PREFIX: String = s"$PROCESS_MARKPOINT_FILE_ROOT_PATH/$MARKPOINT_PREFIX"
 
-    private val MAIN_KAFKA_TOPIC: String = conf.getString("historic_data.kafka.kafka_topic")
+    private val KAFKA_TOPIC: String = conf.getString("historic_data.kafka.kafka_topic")
     private val KAFKA_KEY: String = conf.getString("historic_data.kafka.kafka_key")
 
     private val SOURCE_FILE_FORMAT: String = conf.getString("historic_data.raw_files.file_format")
