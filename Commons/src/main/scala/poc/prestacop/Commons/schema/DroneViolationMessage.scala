@@ -1,12 +1,12 @@
 package poc.prestacop.Commons.schema
 
-import java.sql.Date
+import java.sql.Timestamp
 
 case class DroneViolationMessage(
-                                 lat: Double,
-                                 lng: Double,
-                                 sending_date: Date,
-                                 drone_id: String,
-                                 violation_code: String,
-                                 image_id: String
+                                  lat: Option[Double],
+                                  lng: Option[Double],
+                                  sending_date: Option[Timestamp],
+                                  drone_id: Option[String],
+                                  violation_code: Option[String],
+                                  image_id: Option[String]
                                )

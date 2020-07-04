@@ -1,15 +1,19 @@
 package poc.prestacop.HistoricDataLoader
 
 import java.io.{BufferedReader, File, FileNotFoundException, FileReader, FileWriter}
+import java.sql.Timestamp
+import java.util.Date
+import java.text.SimpleDateFormat
 
 import scala.io.Source._
 import scala.util.{Failure, Success, Try}
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import poc.prestacop.Commons.AppConfig
+import poc.prestacop.Commons.schema.DroneViolationMessage
 
 import scala.io.BufferedSource
 
-class HistoricDataLoader(producer: KafkaProducer[String, String]){
+class HistoricDataLoader(producer: KafkaProducer[String, DroneViolationMessage]){
 
     import HistoricDataLoader._
 
@@ -180,18 +184,66 @@ class HistoricDataLoader(producer: KafkaProducer[String, String]){
         }
     }
 
+    private[this] def parseHourAndDate(date: String, hour: String): Option[Timestamp] ={
+        Try{
+            val parsedDate: String = parseDate(date)
+            val parsedHour: String = parseHour(hour)
+
+            val dateFormat: SimpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss")
+            val utilDate: Date = dateFormat.parse(s"$parsedDate $parsedHour")
+
+            new Timestamp(utilDate.getTime);
+        } match {
+            case Success(value) =>
+                Some(value)
+            case Failure(_) =>
+                None
+        }
+
+    }
+
+    private[this] def parseDate(date: String): String ={
+        val splited_date: List[String] = date.split("/").toList
+        s"${splited_date(1)}-${splited_date(0)}-${splited_date(2)}"
+    }
+
+    private[this] def parseHour(hour: String): String = {
+        val hourHours: Int = hour.substring(0,2).toInt
+        val hourMinutes: Int = hour.substring(2,4).toInt
+        if (hour.contains("P")) {
+            "%02d:%02d:00".format((hourHours + 12) % 24, hourMinutes)
+        } else {
+            "%02d:%02d:00".format(hourHours, hourMinutes)
+        }
+    }
+
+    private[this] def parseRecord(record: String): DroneViolationMessage = {
+        val rawRecordContent: List[String] = record.split(LINE_SPLIT_REGEX).toList
+        val hour: String = rawRecordContent(19)
+        val date: String = rawRecordContent(4)
+        val violationCode: Option[String] =
+            if (rawRecordContent(5).isEmpty) {
+                None
+            } else {
+                Some(rawRecordContent(5))
+            }
+         DroneViolationMessage(None, None, parseHourAndDate(date, hour), None, violationCode, None)
+    }
+
     @scala.annotation.tailrec
     private[this] def readAndSendFile(file: String,
                                       reader: BufferedReader,
                                       startingMarkpoint: Int,
                                       currentMarkpoint: Int): Unit = {
 
-        val filePart: String = reader.readLine()
+        val record: String = reader.readLine()
 
         if(currentMarkpoint >= startingMarkpoint) {
-            if(filePart != null) {
+            if(record != null) {
 
-                producer.send(new ProducerRecord(KAFKA_TOPIC, KAFKA_KEY, filePart))
+                val parsedRecord: DroneViolationMessage = parseRecord(record)
+
+                producer.send(new ProducerRecord(KAFKA_TOPIC, KAFKA_KEY, parsedRecord))
 
                 updateMarkpoint(file, currentMarkpoint)
                 if ((currentMarkpoint % NB_CHECKPOINT_TO_PRINT_INFO) == 0 && (currentMarkpoint > 0)){
@@ -248,7 +300,7 @@ class HistoricDataLoader(producer: KafkaProducer[String, String]){
 }
 
 object HistoricDataLoader extends AppConfig {
-    def apply(producer: KafkaProducer[String, String]):HistoricDataLoader = new HistoricDataLoader(producer)
+    def apply(producer: KafkaProducer[String, DroneViolationMessage]):HistoricDataLoader = new HistoricDataLoader(producer)
 
     private val PROCESSED_FILE_TAG: Int = -1
     private val MARKPOINT_LOAD_ERROR_TAG: Int = -2
@@ -267,4 +319,5 @@ object HistoricDataLoader extends AppConfig {
     private val KAFKA_KEY: String = conf.getString("historic_data.kafka.kafka_key")
 
     private val SOURCE_FILE_FORMAT: String = conf.getString("historic_data.raw_files.file_format")
+    private val LINE_SPLIT_REGEX: String = ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"
 }

@@ -5,6 +5,7 @@ import java.util.Properties
 
 import org.apache.kafka.clients.producer.KafkaProducer
 import poc.prestacop.Commons.AppConfig
+import poc.prestacop.Commons.schema.DroneViolationMessage
 
 object HistoricDataLoaderMain extends AppConfig {
 
@@ -17,10 +18,10 @@ object HistoricDataLoaderMain extends AppConfig {
 
         kafkaProperties.put("bootstrap.servers", KAFKA_BOOTSTRAP_SERVER)
         kafkaProperties.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
-        kafkaProperties.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer")
+        kafkaProperties.put("value.serializer", "poc.prestacop.Commons.serializer.DroneViolationMessageSerializer")
 
-        val kafkaHitoricalDataProducer: KafkaProducer[String, String] =
-            new KafkaProducer[String, String](kafkaProperties)
+        val kafkaHitoricalDataProducer: KafkaProducer[String, DroneViolationMessage] =
+            new KafkaProducer[String, DroneViolationMessage](kafkaProperties)
 
         HistoricDataLoader(kafkaHitoricalDataProducer).run()
         kafkaHitoricalDataProducer.close(Duration.ofMinutes(KAFKA_PRODUCER_CLOSE_DURATION_MINUTES))
