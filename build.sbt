@@ -6,7 +6,6 @@ lazy val commonSettings = Seq(
         "com.typesafe" % "config" % "1.4.0",
         "org.jmockit" % "jmockit" % "1.34" % "test",
         "org.slf4j" % "slf4j-api" % "1.7.25",
-//        "org.slf4j" % "slf4j-simple" % "1.6.4" % Test,
     )
 )
 
@@ -26,6 +25,9 @@ lazy val Commons = (project in file("Commons"))
   .settings(
       name := "Commons",
       commonSettings,
+      libraryDependencies ++= Seq(
+          "org.apache.kafka" %% "kafka" % "2.5.0",
+      )
   )
 
 lazy val HistoricDataLoader = (project in file("HistoricDataLoader"))
