@@ -19,6 +19,7 @@ lazy val Project = (project in file("."))
       HistoricDataLoader,
       HistoricDataSaver,
       DataProcessor,
+      MessageConsumer,
   )
 
 lazy val Commons = (project in file("Commons"))
@@ -55,4 +56,14 @@ lazy val DataProcessor = (project in file("DataProcessor"))
           "org.apache.spark" % "spark-core_2.12" % "2.4.0",
           "org.apache.spark" % "spark-sql_2.12" % "2.4.0",
       )
+  ).dependsOn(Commons)
+
+lazy val MessageConsumer = (project in file("MessageConsumer"))
+  .settings(
+    name := "MessageConsumer",
+    commonSettings,
+    libraryDependencies ++= Seq(
+      "org.apache.spark" % "spark-core_2.12" % "2.4.0",
+      "org.apache.spark" % "spark-sql_2.12" % "2.4.0",
+    )
   ).dependsOn(Commons)
