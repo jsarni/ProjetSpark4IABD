@@ -5,7 +5,7 @@ import poc.prestacop.Commons.AppConfig
 import poc.prestacop.Commons.utils.HdfsUtils._
 import org.apache.spark.storage.StorageLevel
 import poc.prestacop.Commons.schema.DroneViolationMessage
-import poc.prestacop.DataProcessor.AnalysisProcessor.FirstAnalysisProcessor
+import poc.prestacop.DataProcessor.AnalysisProcessor.{FirstAnalysisProcessor, SecondAnalysisProcessor}
 
 class DataProcessor(dataFrame: DataFrame)(implicit sparkSession: SparkSession) {
 
@@ -30,6 +30,7 @@ class DataProcessor(dataFrame: DataFrame)(implicit sparkSession: SparkSession) {
     def run(): Unit = {
         for {
             _ <- FirstAnalysisProcessor(preparedDF).run
+            _ <- SecondAnalysisProcessor(preparedDF).run
             _ = preparedDF.unpersist()
         } yield ()
     }
@@ -43,11 +44,9 @@ object DataProcessor extends AppConfig{
 
 
 
-    val SECOND_ANALYSIS_TARGET_PATH: String = conf.getString("hdfs.target.second_analysis_path")
     val THIRD_ANALYSIS_TARGET_PATH: String = conf.getString("hdfs.target.third_analysis_path")
     val FOURTH_ANALYSIS_TARGET_PATH: String = conf.getString("hdfs.target.fourth_analysis_path")
 
-    val SECOND_ANALYSIS_TARGET_FORMAT: String = conf.getString("hdfs.target.second_analysis_format")
     val THIRD_ANALYSIS_TARGET_FORMAT: String = conf.getString("hdfs.target.third_analysis_format")
     val FOURTH_ANALYSIS_TARGET_FORMAT: String = conf.getString("hdfs.target.fourth_analysis_format")
 }
