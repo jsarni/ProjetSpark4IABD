@@ -29,6 +29,7 @@ class SecondAnalysisProcessor(dataFrame: DataFrame)(implicit sparkSession: Spark
               .agg(count("violation_code").alias("number_of_violations"))
               .withColumn("total", sum('number_of_violations).over(window))
               .withColumn("percent", ('number_of_violations * 100) / 'total)
+              .drop('total)
               .sort(desc("number_of_violations"))
               .limit(5)
         }

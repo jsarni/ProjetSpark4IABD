@@ -5,7 +5,7 @@ import poc.prestacop.Commons.AppConfig
 import poc.prestacop.Commons.utils.HdfsUtils._
 import org.apache.spark.storage.StorageLevel
 import poc.prestacop.Commons.schema.DroneViolationMessage
-import poc.prestacop.DataProcessor.AnalysisProcessor.{FirstAnalysisProcessor, SecondAnalysisProcessor, ThirdAnalysisProcessor}
+import poc.prestacop.DataProcessor.AnalysisProcessor.{FirstAnalysisProcessor, FourthAnalysisProcessor, SecondAnalysisProcessor, ThirdAnalysisProcessor}
 
 class DataProcessor(dataFrame: DataFrame)(implicit sparkSession: SparkSession) {
 
@@ -32,6 +32,7 @@ class DataProcessor(dataFrame: DataFrame)(implicit sparkSession: SparkSession) {
             _ <- FirstAnalysisProcessor(preparedDF).run
             _ <- SecondAnalysisProcessor(preparedDF).run
             _ <- ThirdAnalysisProcessor(preparedDF).run
+            _ <- FourthAnalysisProcessor(preparedDF).run
             _ = preparedDF.unpersist()
         } yield ()
     }
