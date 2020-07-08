@@ -1,6 +1,7 @@
 package poc.prestacop.DataProcessor.AnalysisProcessor
 
-import org.apache.spark.sql.functions.{count, date_format, lit}
+import org.apache.spark.sql.expressions.{Window, WindowSpec}
+import org.apache.spark.sql.functions.{count, date_format, lit, sum}
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 import poc.prestacop.Commons.AppConfig
 import poc.prestacop.Commons.utils.HdfsUtils.writeToHdfs
@@ -25,9 +26,14 @@ class FirstAnalysisProcessor(dataFrame: DataFrame)(implicit sparkSession: SparkS
 
     def aggregationForFirstAnalysis(df: DataFrame): Try[DataFrame] = {
         Try {
+            val window: WindowSpec = Window.rowsBetween(Window.unboundedPreceding, Window.unboundedFollowing)
+
             df
               .groupBy("season")
               .agg(count("violation_code").alias("number_of_violations"))
+              .withColumn("total", sum('number_of_violations).over(window))
+              .withColumn("percent", ('number_of_violations * 100) / 'total)
+              .drop('total)
         }
     }
 
