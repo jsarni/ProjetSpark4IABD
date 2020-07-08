@@ -1,6 +1,7 @@
 package poc.prestacop.DataProcessor
 
 import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.functions.col
 import poc.prestacop.Commons.AppConfig
 import poc.prestacop.Commons.utils.HdfsUtils._
 import org.apache.spark.storage.StorageLevel
@@ -24,6 +25,7 @@ class DataProcessor(dataFrame: DataFrame)(implicit sparkSession: SparkSession) {
 
     val preparedDF: DataFrame =
         transformTo[DroneViolationMessage](dataFrame)
+          .where(col("sending_date").isNotNull)
           .persist(StorageLevel.MEMORY_AND_DISK)
           .repartition(SPARK_DEFAULT_PARTITIONS)
 
