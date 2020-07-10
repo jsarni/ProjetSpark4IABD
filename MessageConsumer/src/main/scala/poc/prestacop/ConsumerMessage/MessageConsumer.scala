@@ -16,7 +16,7 @@ import java.util.Properties
 
 class ConsumerMessage(spark: SparkSession, kafkaConsumer: KafkaConsumer[String, DroneMessage]) {
   import ConsumerMessage._
-git
+
   def run(): Unit = {
     startReadingMessages(Nil)
   }
