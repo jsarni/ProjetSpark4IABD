@@ -9,4 +9,4 @@ case class DroneViolationMessage(
                                   drone_id: Option[String],
                                   violation_code: Option[String],
                                   image_id: Option[String]
-                               )
+                               ) extends DroneMessage

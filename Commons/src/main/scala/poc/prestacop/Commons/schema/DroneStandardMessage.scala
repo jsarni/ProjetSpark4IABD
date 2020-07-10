@@ -2,9 +2,9 @@ package poc.prestacop.Commons.schema
 
 import java.sql.Date
 
-case class DroneStandardMessage(
+case class DroneStandardMessage (
                                  lat: Double,
                                  lng: Double,
                                  sendingDate: Date,
                                  drone_id: String
-                               )
+                               ) extends DroneMessage
