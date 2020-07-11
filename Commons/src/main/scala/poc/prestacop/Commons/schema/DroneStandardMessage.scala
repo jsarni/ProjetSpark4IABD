@@ -1,10 +1,10 @@
 package poc.prestacop.Commons.schema
 
-import java.sql.Date
+import java.sql.Timestamp
 
-case class DroneStandardMessage(
-                                 lat: Double,
-                                 lng: Double,
-                                 sendingDate: Date,
-                                 drone_id: String
-                               )
+case class DroneStandardMessage (
+                                  lat: Double,
+                                  lng: Double,
+                                  sending_date: Timestamp,
+                                  drone_id: String
+                                )
