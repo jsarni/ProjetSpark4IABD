@@ -27,7 +27,6 @@ class MessageConsumer(spark: SparkSession, kafkaConsumer: KafkaConsumer[String, 
   @scala.annotation.tailrec
   private[this] def startReadingMessages(previousStandardMessages: List[DroneStandardMessage], previousViolationMessages: List[DroneViolationMessage]): Unit = {
 
-    println("INFO - Reading received messages")
     if ((previousStandardMessages != Nil) && previousStandardMessages.length >= BATCH_SIZE_FOR_FILE_WRITING_WITH_SPAR) {
       println("INFO - save Standard and Violation messages  ")
       saveStandardBatch(previousStandardMessages)
@@ -51,6 +50,7 @@ class MessageConsumer(spark: SparkSession, kafkaConsumer: KafkaConsumer[String, 
       elem.key() match {
 
         case KAFKA_STANDARD_KEY =>
+          println("INFO - Received Standard Message")
           val standardMessageJson:JsValue = Json.parse(elem.value())
           standardMessageJson.validate[DroneStandardMessage] match {
             case s: JsSuccess[DroneStandardMessage] =>
@@ -74,22 +74,12 @@ class MessageConsumer(spark: SparkSession, kafkaConsumer: KafkaConsumer[String, 
           }
 
         case KAFKA_VIOLATION_KEY =>
+          println("WARN - Received Violation Message")
           val violationMessageJson:JsValue=Json.parse(elem.value())
           violationMessageJson.validate[DroneViolationMessage] match {
             case s: JsSuccess[DroneViolationMessage] =>
               val violationMessage: DroneViolationMessage = s.get
-              val violationCode:String= violationMessage.violation_code.getOrElse("Unknown")
-              val violationTime = violationMessage.sending_date
-              val violation_date =
-                violationTime match{
-                  case Some(timestamp)=>
-                    convertTimestampToString(timestamp)
-                  case None =>
-                    "unkown"
-                }
-              val violationDroneId:String= violationMessage.drone_id.getOrElse("Unknown")
-              val violation_text :String="Violation occured on "+ violation_date+" \nSent from : "+violationDroneId
-              mailSender(violation_text,violationCode)
+              mailSender(violationMessage)
               (previousStandardMessages, addViolationRecordToBatch(previousViolationMessages, violationMessage))
             case e: JsError =>
               print("error!")
@@ -126,13 +116,23 @@ class MessageConsumer(spark: SparkSession, kafkaConsumer: KafkaConsumer[String, 
   private[this] def getFilePathForViolationImage(imageID: String): String = {
     s"$HDFS_IMAGES_TARGET_DIR/$imageID"
   }
+  private[this] def pathExists(path: String): Boolean = {
+    val file: File = new File(path)
+    file.exists()
+  }
 
   private[this] def saveImage(image: DroneImage): Try[Unit] = {
-    Try{
-      val filePath: String = getFilePathForViolationImage(image.image_id)
-      val writer: PrintWriter = new PrintWriter(filePath)
-      writer.write(image.content)
-      writer.close()
+    Try {
+      if (!pathExists(HDFS_IMAGES_TARGET_DIR)) {
+        val dir: File = new File(HDFS_IMAGES_TARGET_DIR)
+        dir.mkdir()
+        if (pathExists(HDFS_IMAGES_TARGET_DIR)) {
+          val filePath: String = getFilePathForViolationImage(image.image_id)
+          val writer: PrintWriter = new PrintWriter(filePath)
+          writer.write(image.content)
+          writer.close()
+        }
+      }
     }
   }
 
