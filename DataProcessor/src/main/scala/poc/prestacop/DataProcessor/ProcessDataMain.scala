@@ -1,9 +1,7 @@
 package poc.prestacop.DataProcessor
 
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.apache.spark.storage.StorageLevel
 import poc.prestacop.Commons.AppConfig
-import poc.prestacop.Commons.schema.DroneViolationMessage
 import poc.prestacop.Commons.utils.HdfsUtils.readFromHdfs
 
 import scala.util.{Failure, Success, Try}

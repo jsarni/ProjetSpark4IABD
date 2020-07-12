@@ -31,6 +31,7 @@ class MessageConsumer(spark: SparkSession, kafkaConsumer: KafkaConsumer[String, 
       println("INFO - save Standard and Violation messages  ")
       saveStandardBatch(previousStandardMessages)
       saveViolationBatch(previousViolationMessages)
+      kafkaConsumer.commitAsync()
       println("SUCCESS - Standard and Violation messages Batch successfully saved - start new batch about to run")
       startReadingMessages(Nil, Nil)
     }
@@ -126,7 +127,7 @@ class MessageConsumer(spark: SparkSession, kafkaConsumer: KafkaConsumer[String, 
   private[this] def saveImage(image: DroneImage): Unit = {
       if (!pathExists(HDFS_IMAGES_TARGET_DIR)) {
         val dir: File = new File(HDFS_IMAGES_TARGET_DIR)
-        dir.mkdir()
+        dir.mkdirs()
       }
 
       val filePath: String = getFilePathForViolationImage(image.image_id)

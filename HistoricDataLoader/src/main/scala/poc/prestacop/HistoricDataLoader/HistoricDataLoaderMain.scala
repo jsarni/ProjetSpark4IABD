@@ -19,6 +19,7 @@ object HistoricDataLoaderMain extends AppConfig {
         kafkaProperties.put("bootstrap.servers", KAFKA_BOOTSTRAP_SERVER)
         kafkaProperties.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
         kafkaProperties.put("value.serializer", "poc.prestacop.Commons.serializer.DroneViolationMessageSerializer")
+        kafkaProperties.put("enable.auto.commit", "false")
 
         val kafkaHitoricalDataProducer: KafkaProducer[String, DroneViolationMessage] =
             new KafkaProducer[String, DroneViolationMessage](kafkaProperties)

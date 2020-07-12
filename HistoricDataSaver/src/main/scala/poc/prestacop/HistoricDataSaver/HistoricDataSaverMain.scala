@@ -33,6 +33,7 @@ object HistoricDataSaverMain extends AppConfig{
         kafkaProperties.put("bootstrap.servers", KAFKA_BOOTSTRAP_SERVER)
         kafkaProperties.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
         kafkaProperties.put("value.deserializer", "poc.prestacop.Commons.deserializer.DroneViolationMessageDeserializer")
+        kafkaProperties.put("enable.auto.commit", "false")
         kafkaProperties.put("group.id", KAFKA_CONSUMERS_GROUP_ID)
 
 
