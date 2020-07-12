@@ -64,6 +64,6 @@ lazy val MessageConsumer = (project in file("MessageConsumer"))
     libraryDependencies ++= Seq(
       "org.apache.kafka" %% "kafka" % "2.5.0",
       "com.typesafe.play" %% "play-json" % "2.9.0",
-      "javax.mail" % "javax.mail-api" % "1.6.2",
+      "org.apache.commons" % "commons-email" % "1.5",
     )
   ).dependsOn(Commons)

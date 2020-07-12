@@ -1,37 +1,33 @@
 package poc.prestacop.ConsumerMessage
 
-
-import java.util.Properties
-import javax.mail.{Message, Session}
-import javax.mail.internet.{InternetAddress, MimeMessage}
 import poc.prestacop.Commons.AppConfig
-import scala.io.Source
-
+import org.apache.commons.mail.DefaultAuthenticator
+import org.apache.commons.mail.SimpleEmail
 
 object SendMail extends AppConfig {
+
   private val MAIL_HOST = "smtp.gmail.com"
-  private val MAIL_PORT = "587"
+  private val MAIL_PORT = 465
 
   private val MAIL_ADRESSE = conf.getString("consumer_message.mail.mail_adress")
-  private val MAIL_USERNAME = conf.getString("consumer_message.mail.user_name")
-  private val MAIL_PASSWORD = conf.getString("consumer_message..mail.password")
+//  private val MAIL_USERNAME = conf.getString("consumer_message.mail.user_name")
+  private val MAIL_USERNAME = "prestacop.grp10.4iabd1@gmail.com"
+  private val MAIL_PASSWORD = "Prestacop.nypd1"
+  private val MAIL_SEND_TO = conf.getString("consumer_message.mail.mail_adress_send_to")
+  def mailSender(text: String, subject: String) = {
 
-  def mailSender(text:String, subject:String) = {
-    val properties = new Properties()
-    properties.put("mail.smtp.port", MAIL_PORT)
-    properties.put("mail.smtp.auth", "true")
-    properties.put("mail.smtp.starttls.enable", "true")
+    println(MAIL_ADRESSE, MAIL_USERNAME, MAIL_PASSWORD)
 
-    val session = Session.getDefaultInstance(properties, null)
-    val message = new MimeMessage(session)
-    message.addRecipient(Message.RecipientType.TO, new InternetAddress(MAIL_ADRESSE));
-    message.setSubject(subject)
-    message.setContent(text, "text/html")
-
-    val transport = session.getTransport("smtp")
-    transport.connect(MAIL_HOST, MAIL_USERNAME,MAIL_PASSWORD)
-    transport.sendMessage(message, message.getAllRecipients)
-    //(Nil,Nil)
+    val email = new SimpleEmail()
+    email.setHostName(MAIL_HOST)
+    email.setSmtpPort(MAIL_PORT)
+    email.setAuthenticator(new DefaultAuthenticator(MAIL_USERNAME, MAIL_PASSWORD))
+    email.setSSLOnConnect(true)
+    email.setFrom(MAIL_ADRESSE)
+    email.setSubject(subject)
+    email.setMsg(text)
+    email.addTo(MAIL_SEND_TO)
+    email.send
   }
-
 }
+

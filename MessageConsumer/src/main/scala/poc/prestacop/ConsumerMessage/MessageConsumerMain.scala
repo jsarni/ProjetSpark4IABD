@@ -7,6 +7,7 @@ import java.util.Properties
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.spark.sql.SparkSession
 import poc.prestacop.Commons.AppConfig
+import poc.prestacop.ConsumerMessage.SendMail._
 
 object MessageConsumerMain extends AppConfig{
 
