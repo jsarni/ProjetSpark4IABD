@@ -50,6 +50,7 @@ class MessageProducer (producer: KafkaProducer[String, String]){
       val parsedViolationMessage: String  = jsonToString(Json.toJson(message))
       val parseImage: String = jsonToString(Json.toJson(image))
       producer.send(new ProducerRecord(KAFKA_TOPIC, KAFKA_VIOLATION_MESSAGE_KEY, parsedViolationMessage))
+      Thread.sleep(1000)
       producer.send(new ProducerRecord(KAFKA_TOPIC, KAFKA_VIOLATION_IMAGE_KEY, parseImage))
     }
     else {
@@ -70,7 +71,5 @@ object MessageProducer extends AppConfig{
   private val KAFKA_STANDARD_MESSAGE_KEY: String = conf.getString("kafka.kafka_standard_message_key")
   private val KAFKA_VIOLATION_MESSAGE_KEY: String = conf.getString("kafka.kafka_violation_message_key")
   private val KAFKA_VIOLATION_IMAGE_KEY: String = conf.getString("kafka.kafka_violation_image_key")
-
-
 
 }

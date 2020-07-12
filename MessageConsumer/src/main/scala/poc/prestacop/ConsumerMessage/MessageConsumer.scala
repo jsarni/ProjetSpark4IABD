@@ -62,11 +62,13 @@ class MessageConsumer(spark: SparkSession, kafkaConsumer: KafkaConsumer[String, 
           }
 
         case KAFKA_IMAGE_KEY =>
+          println("WARNING - Received Image Violation Message")
           val imageMessageJson:JsValue = Json.parse(elem.value())
           imageMessageJson.validate[DroneImage] match {
             case s: JsSuccess[DroneImage] =>
               val imagedMessage: DroneImage = s.get
               saveImage(imagedMessage)
+
               (previousStandardMessages, previousViolationMessages)
             case _: JsError =>
               print("ERROR - Unsaved violation Image")
@@ -121,19 +123,17 @@ class MessageConsumer(spark: SparkSession, kafkaConsumer: KafkaConsumer[String, 
     file.exists()
   }
 
-  private[this] def saveImage(image: DroneImage): Try[Unit] = {
-    Try {
+  private[this] def saveImage(image: DroneImage): Unit = {
       if (!pathExists(HDFS_IMAGES_TARGET_DIR)) {
         val dir: File = new File(HDFS_IMAGES_TARGET_DIR)
         dir.mkdir()
-        if (pathExists(HDFS_IMAGES_TARGET_DIR)) {
-          val filePath: String = getFilePathForViolationImage(image.image_id)
-          val writer: PrintWriter = new PrintWriter(filePath)
-          writer.write(image.content)
-          writer.close()
-        }
       }
-    }
+
+      val filePath: String = getFilePathForViolationImage(image.image_id)
+      val writer: PrintWriter = new PrintWriter(filePath)
+      writer.write(image.content)
+      writer.close()
+
   }
 
   private[this] def saveStandardBatch(fileBatchContent: List[DroneStandardMessage]): Unit = {
