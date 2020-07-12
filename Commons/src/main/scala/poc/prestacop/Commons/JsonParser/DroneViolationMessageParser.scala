@@ -21,7 +21,7 @@ object DroneViolationMessageParser {
 
   implicit val droneViolationMessageReads: Reads[DroneViolationMessage] = (
     (JsPath \ "lat").readNullable[Double] and
-      (JsPath \ "lng").readNullable[Double](min(-180.0) keepAnd max(180.0)) and
+      (JsPath \ "lng").readNullable[Double] and
       (JsPath \ "sending_date").readNullable[Timestamp] and
       (JsPath \ "drone_id").readNullable[String] and
       (JsPath \ "violation_code").readNullable[String] and

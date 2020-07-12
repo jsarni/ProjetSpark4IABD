@@ -17,8 +17,8 @@ object DroneStandardMessageParser {
   }
 
   implicit val droneStandarMessageReads: Reads[DroneStandardMessage] = (
-    (JsPath \ "lat").read[Double](min(-90.0) keepAnd max(90.0)) and
-      (JsPath \ "lng").read[Double](min(-180.0) keepAnd max(180.0)) and
+    (JsPath \ "lat").read[Double] and
+      (JsPath \ "lng").read[Double] and
       (JsPath \ "sending_date").read[Timestamp] and
       (JsPath \ "drone_id").read[String]
 

@@ -9,12 +9,12 @@ import poc.prestacop.Commons.schema.{DroneImage, DroneStandardMessage, DroneViol
 import poc.prestacop.Commons.JsonParser.DroneViolationMessageParser._
 import poc.prestacop.Commons.JsonParser.DroneStandardMessageParser._
 import poc.prestacop.Commons.JsonParser.DroneImageParser._
+import poc.prestacop.Commons.utils.DateUtils._
 import org.apache.spark.sql.SaveMode.Append
 
 import scala.jdk.CollectionConverters._
 import play.api.libs.json._
 import java.io._
-import java.sql.Timestamp
 
 import scala.util.Try
 
@@ -29,33 +29,25 @@ class MessageConsumer(spark: SparkSession, kafkaConsumer: KafkaConsumer[String, 
 
     println("INFO - Reading received messages")
     if ((previousStandardMessages != Nil) && previousStandardMessages.length >= BATCH_SIZE_FOR_FILE_WRITING_WITH_SPAR) {
-        println("INFO - save Standard messages  ")
-        saveStandardBatch(previousStandardMessages)
-        println("SUCCESS - Standard messages Batch successfully saved - start new batch about to run")
-        startReadingMessages(Nil, previousViolationMessages)
+      println("INFO - save Standard and Violation messages  ")
+      saveStandardBatch(previousStandardMessages)
+      saveViolationBatch(previousViolationMessages)
+      println("SUCCESS - Standard and Violation messages Batch successfully saved - start new batch about to run")
+      startReadingMessages(Nil, Nil)
     }
-    else{
-      if ((previousViolationMessages != Nil) && previousViolationMessages.length >= BATCH_SIZE_FOR_FILE_WRITING_WITH_SPAR) {
+    else {
+      val records: ConsumerRecords[String, String] = kafkaConsumer.poll(Duration.ofMinutes(KAFKA_FILES_CONSUMER_POLL_DURATION_MUNITES))
+      val recordsIterator: Iterator[ConsumerRecord[String, String]] = records.iterator().asScala
+      val updatedLists: (List[DroneStandardMessage], List[DroneViolationMessage]) = manageMessages(previousStandardMessages, previousViolationMessages, recordsIterator)
+      startReadingMessages(updatedLists._1, updatedLists._2)
+    }
 
-        println("INFO - save violation message")
-        saveViolationBatch(previousViolationMessages)
-        println("SUCCESS - Violation messages Batch successfully saved - start new batch about to run")
-        startReadingMessages(previousStandardMessages, Nil)
-      }
-      else {
-        val records: ConsumerRecords[String, String] = kafkaConsumer.poll(Duration.ofMinutes(KAFKA_FILES_CONSUMER_POLL_DURATION_MUNITES))
-        val recordsIterator: Iterator[ConsumerRecord[String, String]] = records.iterator().asScala
-        val updatedLists: (List[DroneStandardMessage], List[DroneViolationMessage]) = manageMessages(previousStandardMessages, previousViolationMessages, recordsIterator)
-        startReadingMessages(updatedLists._1, updatedLists._2)
-      }
-    }
   }
   private[this] def manageMessages(previousStandardMessages: List[DroneStandardMessage],
                                    previousViolationMessages: List[DroneViolationMessage],
                                    iter: Iterator[ConsumerRecord[String, String]]): (List[DroneStandardMessage], List[DroneViolationMessage]) ={
     if(iter.hasNext) {
       val elem = iter.next()
-      println(elem.value())
       elem.key() match {
 
         case KAFKA_STANDARD_KEY =>
@@ -90,8 +82,8 @@ class MessageConsumer(spark: SparkSession, kafkaConsumer: KafkaConsumer[String, 
               val violationTime = violationMessage.sending_date
               val violation_date =
                 violationTime match{
-                  case Some(x)=>
-                    x.toString
+                  case Some(timestamp)=>
+                    convertTimestampToString(timestamp)
                   case None =>
                     "unkown"
                 }
@@ -193,7 +185,7 @@ object MessageConsumer extends AppConfig {
   val HDFS_TARGET_DIR: String = conf.getString("consumer_message.hdfs_files.target_directory")
 
   val NB_DEFAULT_SPARK_PARTITIONS: Int = conf.getInt("consumer_message.spark.default_partitions")
-  //val TARGET_FILE_NAME: String = conf.getString("consumer_message.hdfs_files.file_name")
+
 
 
   val WRITING_STANDARD_FILE_FORMAT: String = conf.getString("consumer_message.hdfs_files.standard_file_format")
