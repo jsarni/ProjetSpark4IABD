@@ -8,4 +8,9 @@ object DroneImageParser {
     (JsPath \ "image_id").read[String] and
       (JsPath \ "content").read[String]
     ) (DroneImage.apply _)
+
+  implicit val droneImageWrites: Writes[DroneImage] = (
+    (JsPath \ "image_id").write[String] and
+      (JsPath \ "content").write[String]
+    ) (unlift(DroneImage.unapply))
 }

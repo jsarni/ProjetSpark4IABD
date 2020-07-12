@@ -27,4 +27,13 @@ object DroneViolationMessageParser {
       (JsPath \ "violation_code").readNullable[String] and
       (JsPath \ "image_id").readNullable[String]
     ) (DroneViolationMessage.apply _)
+
+  implicit val droneViolationMessageWrites: Writes[DroneViolationMessage] = (
+    (JsPath \ "lat").writeNullable[Double] and
+      (JsPath \ "lng").writeNullable[Double] and
+      (JsPath \ "sending_date").writeNullable[Timestamp] and
+      (JsPath \ "drone_id").writeNullable[String] and
+      (JsPath \ "violation_code").writeNullable[String] and
+      (JsPath \ "image_id").writeNullable[String]
+    ) (unlift(DroneViolationMessage.unapply))
 }
