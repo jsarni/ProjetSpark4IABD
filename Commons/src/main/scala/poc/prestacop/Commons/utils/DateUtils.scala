@@ -1,5 +1,6 @@
 package poc.prestacop.Commons.utils
 
+
 import java.sql.Timestamp
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -21,5 +22,9 @@ object DateUtils {
                 None
         }
 
+    }
+    def convertTimestampToString(ts:Timestamp):String = {
+        val df:SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+        df.format(ts)
     }
 }

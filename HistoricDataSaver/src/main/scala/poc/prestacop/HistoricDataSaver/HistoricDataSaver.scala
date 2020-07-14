@@ -25,6 +25,7 @@ class HistoricDataSaver(spark: SparkSession, kafkaConsumer: KafkaConsumer[String
         if ((previousMessages != Nil) && previousMessages.length >= BATCH_SIZE_FOR_FILE_WRITING_WITH_SPAR) {
             println("INFO - save files about to run")
             saveFileBatch(previousMessages)
+            kafkaConsumer.commitAsync()
             println("SUCCESS - Batch successfully saved - start new batch about to run")
             startReadinMessages(Nil)
         } else {

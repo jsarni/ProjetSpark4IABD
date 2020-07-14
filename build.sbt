@@ -20,7 +20,8 @@ lazy val Project = (project in file("."))
       HistoricDataLoader,
       HistoricDataSaver,
       DataProcessor,
-      MessageProducer
+      MessageProducer,
+      MessageConsumer,
   )
 
 lazy val Commons = (project in file("Commons"))
@@ -64,5 +65,16 @@ lazy val MessageProducer = (project in file("MessageProducer"))
     libraryDependencies ++= Seq(
       "org.apache.kafka" %% "kafka" % "2.5.0",
       "com.typesafe.play" %% "play-json" % "2.9.0",
+    )
+  ).dependsOn(Commons)
+
+lazy val MessageConsumer = (project in file("MessageConsumer"))
+  .settings(
+    name := "MessageConsumer",
+    commonSettings,
+    libraryDependencies ++= Seq(
+      "org.apache.kafka" %% "kafka" % "2.5.0",
+      "com.typesafe.play" %% "play-json" % "2.9.0",
+      "org.apache.commons" % "commons-email" % "1.5",
     )
   ).dependsOn(Commons)

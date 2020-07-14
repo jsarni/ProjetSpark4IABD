@@ -22,7 +22,7 @@ object DroneStandardMessageParser {
       (JsPath \ "sending_date").read[Timestamp] and
       (JsPath \ "drone_id").read[String]
 
-    ) (DroneStandardMessage.apply _)
+    )(DroneStandardMessage.apply _)
 
   implicit val droneStandarMessageWrites: Writes[DroneStandardMessage] = (
     (JsPath \ "lat").write[Double] and
@@ -31,6 +31,5 @@ object DroneStandardMessageParser {
       (JsPath \ "drone_id").write[String]
 
     ) (unlift(DroneStandardMessage.unapply))
-
 
 }

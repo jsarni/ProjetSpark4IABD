@@ -304,7 +304,7 @@ object HistoricDataLoader extends AppConfig {
 
     private val PROCESSED_FILE_TAG: Int = -1
     private val MARKPOINT_LOAD_ERROR_TAG: Int = -2
-    private val NB_CHECKPOINT_TO_PRINT_INFO: Int = 100000
+    private val NB_CHECKPOINT_TO_PRINT_INFO: Int = conf.getInt("nb_records_per_checkpoint")
 
     private val HISTORIC_DATA_ROOT_PATH: String = conf.getString("historic_data.raw_files.files_root_path")
     private val PROCESS_CHECKPOINT_FILE_ROOT_PATH: String = conf.getString("historic_data.raw_files.checkpoint_root_path")
